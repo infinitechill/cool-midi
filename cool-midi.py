@@ -7,6 +7,7 @@ import time
 from midiutil import MIDIFile
 import random
 
+import MidiScales
 
 class CoolMidi:
 	def __init__(self, master):
@@ -31,7 +32,9 @@ class CoolMidi:
 		self.mykey=StringVar()
 		self.myfile=StringVar() 
 		self.myrandomnote=IntVar()
-		self.duration=IntVar() 
+		self.duration=DoubleVar() 
+		self.starttimes=[0,1,2,3,4,5,6,7,8,9]
+		self.time=IntVar()
 
 		# set up colors
 		iframeA = Frame(frame, bd=2, relief=SUNKEN, bg="lavender")
@@ -130,19 +133,17 @@ class CoolMidi:
 		scale_to_use=eval('keysignature+majorminor+"Scale"')
 
 		def WholeNote():
-			self.duration =  (10/self.bpm.get())
+			self.duration =  (4)
 		def HalfNote():
-			self.duration =  (20/self.bpm.get())
+			self.duration =  (2)
 		def QuarterNote():
-			self.duration =  (60/self.bpm.get())
+			self.duration =  (1)
 		def EighthNote():
-			self.duration =  (30/self.bpm.get())
+			self.duration =  (0.5)
 		def SixteenthNote():
-			self.duration =  (15/self.bpm.get())
-		def SixteenthNote():
-			self.duration =  (15/self.bpm.get())
+			self.duration =  (0.25)
 		def RandomLength():						# needs to be changed
-			self.duration =  (15/self.bpm.get())		
+			self.duration =  (1)		
 		setdurationvalue = {
 			"WholeNote" 		: WholeNote,
 			"HalfNote" 			: HalfNote,
@@ -152,8 +153,34 @@ class CoolMidi:
 			"RandomLength" 		: RandomLength,
 		}
 
-		
+		WholeStart=[0,4,8,12,16,20,24,28,32,36]
+		HalfStart=[0,2,4,6,8,10,12,14,16,18]		
+		QuarterStart=[0,1,2,3,4,5,6,7,8,9]
+		EighthStart=[0,0.5,1,1.5,2,2.5,3,3.5,4,4.5]
+		SixteenthStart=[0,0.25,0.5,0.75,1,1.25,1.5,1.75,2,2.25]
 
+		def WholeNoteTimes():
+			self.starttimes = WholeStart
+		def HalfNoteTimes():
+			self.starttimes = HalfStart
+		def QuarterNoteTimes():
+			self.starttimes = QuarterStart
+		def EighthNoteTimes():
+			self.starttimes = EighthStart
+		def SixteenthNoteTimes():
+			self.starttimes = SixteenthStart
+		def RandomLengthTimes():						# needs to be changed
+			self.starttimes = WholeStart
+		
+		setstarttimes = {
+			"WholeNote" 	: WholeNoteTimes,
+			"HalfNote" 		: HalfNoteTimes,
+			"QuarterNote" 	: QuarterNoteTimes,
+			"EighthNote" 	: EighthNoteTimes, 
+			"SixteenthNote" : SixteenthNoteTimes, 
+			"RandomLength" 	: RandomLengthTimes,
+		}
+		
 		# set up other variables to use
 		basstrack 	= 0
 		midtrack 	= 1
@@ -161,11 +188,11 @@ class CoolMidi:
 		basschannel = 0
 		midchannel 	= 1
 		highchannel = 2
-		time     	= 10    # In beats
-		tempo    	= int(self.bpm.get())   # In BPM
+		
+		tempo    	= self.bpm.get()   # In BPM
 		volume   	= 100  # 0-127, as per the MIDI standard
 		setdurationvalue[self.notelength.get()]()
-
+		setstarttimes[self.notelength.get()]()
 
 		# set up scales
 		majorscale = [48, 50, 52, 53, 55, 57, 59, 60]
@@ -201,36 +228,31 @@ class CoolMidi:
 		GSharpMinorScale=[x+9 for x in minorscale]
 
 		MyMIDI = MIDIFile(3)  # three tracks :)
-		MyMIDI.addTempo(basstrack, time, tempo)
-		MyMIDI.addTempo(midtrack, time, tempo)
-		MyMIDI.addTempo(hightrack, time, tempo)
+		MyMIDI.addTempo(basstrack, 0, tempo)
+		MyMIDI.addTempo(midtrack, 0, tempo)
+		MyMIDI.addTempo(hightrack, 0, tempo)
 
-		MyMIDI.addProgramChange(basstrack, basschannel, time, 38) 		#	38 = Synth Bass
-		MyMIDI.addProgramChange(midtrack, midchannel, time, 0) 		#	0 = Acoustic Grand Piano
-		MyMIDI.addProgramChange(hightrack, highchannel, time, 75)		#	75 = Pan Flute
+		MyMIDI.addProgramChange(basstrack, basschannel, 0, 38) 		#	38 = Synth Bass
+		MyMIDI.addProgramChange(midtrack, midchannel, 0, 0) 		#	0 = Acoustic Grand Piano
+		MyMIDI.addProgramChange(hightrack, highchannel, 0, 75)		#	75 = Pan Flute
 
-
+		print(self.starttimes[0])
+		print("here")
+		# for the number of times there are notes in the scale
 		for i, pitch in enumerate(eval(scale_to_use)):
+			time=self.starttimes[i]
+			print(time)
 			# go up through the notes
 			# MyMIDI.addNote(track, channel, pitch, time + i, duration, volume)
 			# pick a random note from the scale and add it to midi
 			randomnote=random.choice(eval(scale_to_use))
 			#MyMIDI.addNote(track, channel, quantizePitch(AMajorScale, randomnote), time + i, duration, volume)
-			MyMIDI.addNote(basstrack, basschannel, randomnote-12, time+i, self.duration, volume)
+			MyMIDI.addNote(basstrack, basschannel, randomnote-12, time, self.duration, volume)
 			randomnote=random.choice(eval(scale_to_use))
-			MyMIDI.addNote(midtrack, midchannel, randomnote, time+i, self.duration, volume)
+			MyMIDI.addNote(midtrack, midchannel, randomnote, time, self.duration, volume)
 			randomnote=random.choice(eval(scale_to_use))
-			MyMIDI.addNote(hightrack, highchannel, randomnote+12, time+i, self.duration, volume)
+			MyMIDI.addNote(hightrack, highchannel, randomnote+12, time, self.duration, volume)
 
-		#	print("track", track, type(track))
-		#	print("channel", channel, type(channel))
-		#	print("random", randomnote, type(randomnote))
-		#	print("time+i", time+i, type(time+i))
-		#	print("duration", duration, type(duration))
-		#	print("volume", volume, type(volume))
-
-		#	MyMIDI.addNote(track, channel, randomnote, time + i, 10, volume)
-			
 			# making chords...
 			#MyMIDI.addNote(track, channel, quantizePitch(cmajormid, randomnote+2), time + i, duration, volume)
 			#MyMIDI.addNote(track, channel, quantizePitch(cmajormid, randomnote+5), time + i, duration, volume)
@@ -333,6 +355,7 @@ class CoolMidi:
 			"120" 		: RD4SET, 
 			"140" 		: RD5SET,
 		}
+
 		# pick random values from arrays
 		randomscale=random.choice(scalearray)
 		randommajorminor=random.choice(majorminorarray)
@@ -343,6 +366,7 @@ class CoolMidi:
 		setmajorminor[randommajorminor]()
 		setduration[randomduration]()
 		setbpm[randombpm]()
+
 		# pack the random values up to return
 		# myrandomvalues=[randomscale,randommajorminor,randomduration,randombpm]
 		# return myrandomvalues
